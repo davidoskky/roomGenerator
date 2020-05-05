@@ -1,6 +1,7 @@
 import random
 import sys
 import csv
+import argparse
 
 def check_available(matrix, x, y, room):
     available = True
@@ -12,8 +13,8 @@ def check_available(matrix, x, y, room):
         xn = x + i
         if xn < 0:
             xn = 0
-        elif xn > len(matrix[0])-1:
-            xn = len(matrix[0])-1
+        elif xn > len(matrix)-1:
+            xn = len(matrix)-1
         for j in [-1, 0, 1]:
             yn = y + j
             if yn < 0:
@@ -21,7 +22,7 @@ def check_available(matrix, x, y, room):
             elif yn > len(matrix[0])-1:
                 yn = len(matrix[0])-1
 
-            if matrix[xn][yn] != 0 and matrix[xn][yn] != room:
+            if matrix[xn][yn] > 0 and matrix[xn][yn] != room:
                 available = False
 
     return available
@@ -164,44 +165,57 @@ def grow(matrix, rooms, room):
             return True
 
 
-if len(sys.argv) < 4:
-    sys.exit('Usage: roomgen.py [dimension of the square] [number of rooms] [output file]')
+# Main begins here
 
-N = int(sys.argv[1])
-nroom = 1 + int(sys.argv[2])
-filename = sys.argv[3]
+parser = argparse.ArgumentParser()
+parser.add_argument('-d', '--dimension', type=int, default=10, help="Dimension of the square to fill")
+parser.add_argument('-s', '--shape', help="CSV file containing the shape to fill")
+parser.add_argument('rooms', type=int, help="Number of rooms")
+parser.add_argument('output', default='out.csv', nargs='?', help="Output file")
+args = parser.parse_args()
+
+if args.shape is not None:
+    input_shape = args.shape
+    matrix = read_shape(input_shape)
+else:
+    N = args.dimension + 2
+    matrix = [[ 0 for i in xrange(N)] for j in xrange(N)]
+    # Draw a perimeter
+    for i in range(N):
+        matrix[0][i] = -1
+        matrix[N-1][i] = -1
+        matrix[i][0] = -1
+        matrix[i][N-1] = -1
+
+nroom = 1 + args.rooms
+filename = args.output
 rooms = []
 roomfinished = [False for i in xrange(nroom)]
+roomfinished[0] = True
 
 for i in range(nroom):
     rooms.append([])
-roomfinished[0] = True
 
-matrix = [[ 0 for i in xrange(N)] for j in xrange(N)]
-outputMatrix = [[ '' for i in xrange(N)] for j in xrange(N)]
+perimeter = get_perimeter(matrix)
+
+
+outputMatrix = [[ '' for i in xrange(len(matrix[0]))] for j in xrange(len(matrix))]
 room = 1
+counter = 0
 while room < nroom:
-    s = random.randint(1,4)
-    k = random.randint(0,N-1)
+    choice = random.choice(perimeter)
 
-    if s == 1:
-        s = 0
-    elif s == 2:
-        s = N-1
-    elif s == 3:
-        s = k
-        k = 0
-    elif s == 4:
-        s = k
-        k = N-1
-
-    if check_available(matrix, s, k, room):
-        matrix[s][k] = room
-        rooms[room].append((s, k))
+    if check_available(matrix, choice[0], choice[1], room):
+        matrix[choice[0]][choice[1]] = room
+        rooms[room].append((choice[0], choice[1]))
     else:
         room -= 1
 
     room += 1
+    counter += 1
+    if counter > 2000:
+        print "Impossible to generate these many rooms"
+        sys.exit()
 
 expandable = True
 
@@ -220,9 +234,9 @@ for row in matrix:
     print
 
 # Write output for quickfort
-for i in range(N):
-    for j in range(N):
-        if matrix[i][j] != 0:
+for i in range(len(matrix)):
+    for j in range(len(matrix[i])):
+        if matrix[i][j] > 0:
             outputMatrix[i][j] = 'd'
 
 with open(filename, "w") as f:
