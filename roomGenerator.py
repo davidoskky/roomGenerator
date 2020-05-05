@@ -55,6 +55,50 @@ def check_expandable(matrix, rooms, room):
     return pixels
 
 
+# Reads a shape from a csv file
+# accepts d as the outer shape
+# Returns a matrix with 0 inside the shape
+# -1 outside the shape
+def read_shape(filename):
+    fileHandler = open(filename)
+    output = list(csv.reader(fileHandler))
+
+    # Convert to numeric matrix
+    for i in range(len(output)):
+        for j in range(len(output[i])):
+            if output[i][j] == 'd':
+                output[i][j] = -1
+            elif output[i][j] == '':
+                output[i][j] = 0
+            else:
+                print "Error, unrecognized character in input: " + output[i][j]
+                output[i][j] = 0
+
+    # Find the outer limits of the shape and set those to -1
+    for i in range(len(output)):
+        # Contiguos blocks are counted as one
+        contiguos = False
+        counter = 0
+        for j in range(len(output[i])):
+            if output[i][j] == -1 and not contiguos:
+                counter += 1
+                contiguos = True
+            elif output[i][j] == 0:
+                contiguos = False
+                if counter % 2 ==0:
+                    output[i][j] = -1
+
+
+        # If there is a cuspid point, the whole line is
+        # not available
+        print counter
+        if counter == 1:
+            for j in range(len(output[i])):
+                output[i][j] = -1
+
+    return output
+
+
 def grow(matrix, rooms, room):
     expandable = check_expandable(matrix, rooms, room)
     if not expandable:
