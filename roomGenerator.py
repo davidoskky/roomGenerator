@@ -62,6 +62,7 @@ def check_expandable(matrix, rooms, room):
 def read_shape(filename):
     fileHandler = open(filename)
     output = list(csv.reader(fileHandler))
+    fileHandler.close()
 
     # Convert to numeric matrix
     for i in range(len(output)):
@@ -91,12 +92,44 @@ def read_shape(filename):
 
         # If there is a cuspid point, the whole line is
         # not available
-        print counter
         if counter == 1:
             for j in range(len(output[i])):
                 output[i][j] = -1
 
     return output
+
+
+# Returns a list of tuples, each one contains the
+# coordinates of one point on the perimeter of the shape
+# Matrix must be a 2d list, containing a shape obtained
+# with the read_shape method
+def get_perimeter(matrix):
+    perimeter = []
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            available = False
+            if matrix[i][j] == 0:
+                for x in [-1, 0, 1]:
+                    xn = i + x
+                    if xn < 0:
+                        xn = 0
+                    elif xn > len(matrix[0])-1:
+                        xn = len(matrix[0])-1
+
+                    for y in [-1, 0, 1]:
+                        yn = j + y
+                        if yn < 0:
+                            yn = 0
+                        elif yn > len(matrix[0])-1:
+                            yn = len(matrix[0])-1
+
+                        if matrix[xn][yn] == -1:
+                            available = True
+
+                if available:
+                    perimeter.append(tuple((i,j)))
+
+    return perimeter
 
 
 def grow(matrix, rooms, room):
